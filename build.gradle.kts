@@ -26,6 +26,7 @@ kotlin {
             }
         }
     }
+
     sourceSets {
         val nativeMain by getting {
             dependencies {

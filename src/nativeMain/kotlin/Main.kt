@@ -2,14 +2,16 @@ import platform.posix.exit
 import okio.Path.Companion.toPath
 
 fun main(args: Array<String>) {
-    if (args.size > 1) {
+    defaultBehaviour(args)
+}
+
+private fun defaultBehaviour(args: Array<String>) {
+    if (args.size > 1) {            // bad invocation
         println("Usage: kotlox [script]")
         exit(64)
-    } else if (args.size == 1) {
+    } else if (args.size == 1) {    // file mode
         runFile(args[0].toPath())
-    } else {
+    } else {                        // repl mode
         runPrompt()
     }
 }
-
-
