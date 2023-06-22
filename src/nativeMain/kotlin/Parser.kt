@@ -1,100 +1,158 @@
 /**
- * The original implementation of the parsing functionality in `jlox` was done
- * with static member classes, which Kotlin doesn't properly support (in Native).
+ * Parses a list of tokens into an expression.
  *
- * Instead, this implementation is interface-based, and hopefully a little denser.
+ * The `expression` > `equality` > `comparison` > `term` > `factor` > `unary` > `primary` precedence order
+ * found in Lox is enforced here by the structure of the functions which parse each kind of
+ * basic expression.
  */
+class Parser(private val tokens: List<Token>) {
+    private var current: Int = 0
 
-/**
- * Represents an expression in an AST
- */
-interface Expression {
-    fun <T> accept(visitor: ExprVisitor<T>): T
-}
+    fun parse(): Expression? {
+        return try {
+            expression()
+        } catch (error: ParseError) {
+            null
+        }
+    }
 
-interface ExprVisitor<T> {
-    fun visitAssignExpr(expr: AssignExpr): T
-    fun visitBinaryExpr(expr: BinaryExpr): T
-    fun visitCallExpr(expr: CallExpr): T
-    fun visitGetExpr(expr: GetExpr): T
-    fun visitGroupingExpr(expr: GroupingExpr): T
-    fun visitLiteralExpr(expr: LiteralExpr): T
-    fun visitLogicalExpr(expr: LogicalExpr): T
-    fun visitSetExpr(expr: SetExpr): T
-    fun visitSuperExpr(expr: SuperExpr): T
-    fun visitThisExpr(expr: ThisExpr): T
-    fun visitUnaryExpr(expr: UnaryExpr): T
-    fun visitVariableExpr(expr: VariableExpr): T
-}
+    private fun expression(): Expression {
+        return equality()
+    }
 
-data class AssignExpr(val name: Token, val value: Expression) : Expression {
-    override fun <T> accept(visitor: ExprVisitor<T>): T {
-        return visitor.visitAssignExpr(this)
+    private fun equality(): Expression {
+        var expr = comparison()
+
+        while (match(TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL)) {
+            val operator = previous()
+            val right = comparison()
+            expr = BinaryExpr(expr, right, operator)
+        }
+
+        return expr
+    }
+
+    private fun comparison(): Expression {
+        var expr = term()
+
+        while (match(TokenType.GREATER, TokenType.GREATER_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL)) {
+            val operator = previous()
+            val right = term()
+            expr = BinaryExpr(expr, right, operator)
+        }
+
+        return expr
+    }
+
+    private fun term(): Expression {
+        var expr = factor()
+
+        while (match(TokenType.MINUS, TokenType.PLUS)) {
+            val operator = previous()
+            val right = factor()
+            expr = BinaryExpr(expr, right, operator)
+        }
+
+        return expr
+    }
+
+    private fun factor(): Expression {
+        var expr = unary()
+
+        while (match(TokenType.SLASH, TokenType.STAR)) {
+            val operator = previous()
+            val right = unary()
+            expr = BinaryExpr(expr, right, operator)
+        }
+
+        return expr
+    }
+
+    private fun unary(): Expression {
+        if (match(TokenType.BANG, TokenType.MINUS)) {
+            val operator = previous()
+            val right = unary()
+            return UnaryExpr(operator, right)
+        }
+
+        return primary()
+    }
+
+    private fun primary(): Expression {
+        if (match(TokenType.FALSE)) return LiteralExpr(false)
+        if (match(TokenType.TRUE)) return LiteralExpr(true)
+        if (match(TokenType.NIL)) return LiteralExpr(null)
+        if (match(TokenType.NUMBER, TokenType.STRING)) return LiteralExpr(previous().literal)
+        if (match(TokenType.LEFT_PAREN)) {
+            val expr = expression()
+            consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.")
+            return GroupingExpr(expr)
+        }
+        if (match(TokenType.LEFT_PAREN)) {
+            val expr = expression()
+            consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.")
+            return GroupingExpr(expr)
+        }
+        throw parseError(peek(), "Expect expression.")
+    }
+
+    private fun match(vararg types: TokenType): Boolean {
+        for (type in types) {
+            if (check(type)) {
+                advance();
+                return true
+            }
+        }
+
+        return false
+    }
+
+    private fun synchronize() {
+        advance()
+
+        while (!atEnd()) {
+            if (previous().type == TokenType.SEMICOLON) return
+
+            when (peek().type) {
+                TokenType.CLASS, TokenType.FUN, TokenType.VAR,
+                TokenType.FOR, TokenType.IF, TokenType.WHILE,
+                TokenType.PRINT, TokenType.RETURN -> return
+                else -> advance()
+            }
+        }
+    }
+
+    private fun consume(type: TokenType, message: String): Token {
+        if (check(type)) return advance()
+        throw parseError(peek(), message)
+    }
+
+    private fun check(type: TokenType): Boolean {
+        if (atEnd()) return false
+        return peek().type == type
+    }
+
+    private fun advance(): Token {
+        if (!atEnd()) current++
+        return previous()
+    }
+
+    private fun atEnd(): Boolean {
+        return peek().type == TokenType.EOF
+    }
+
+    private fun peek(): Token {
+        return tokens[current]
+    }
+
+    private fun previous(): Token {
+        return tokens[current - 1]
     }
 }
 
-data class BinaryExpr(val left: Expression, val right: Expression, val operator: Token) : Expression {
-    override fun <T> accept(visitor: ExprVisitor<T>): T {
-        return visitor.visitBinaryExpr(this)
-    }
+private fun parseError(token: Token, message: String): ParseError {
+    error(token, message)
+    return ParseError()
 }
 
-data class CallExpr(val callee: Expression, val paren: Token, val arguments: List<Expression>) : Expression {
-    override fun <T> accept(visitor: ExprVisitor<T>): T {
-        return visitor.visitCallExpr(this)
-    }
-}
-
-data class GetExpr(val obj: Expression, val name: Token) : Expression {
-    override fun <T> accept(visitor: ExprVisitor<T>): T {
-        return visitor.visitGetExpr(this)
-    }
-}
-
-data class GroupingExpr(val expression: Expression) : Expression {
-    override fun <T> accept(visitor: ExprVisitor<T>): T {
-        return visitor.visitGroupingExpr(this)
-    }
-}
-
-data class LiteralExpr(val value: Any?) : Expression {
-    override fun <T> accept(visitor: ExprVisitor<T>): T {
-        return visitor.visitLiteralExpr(this)
-    }
-}
-
-data class LogicalExpr(val left: Expression, val right: Expression, val operator: Token) : Expression {
-    override fun <T> accept(visitor: ExprVisitor<T>): T {
-        return visitor.visitLogicalExpr(this)
-    }
-}
-
-data class SetExpr(val obj: Expression, val name: Token, val value: Expression) : Expression {
-    override fun <T> accept(visitor: ExprVisitor<T>): T {
-        return visitor.visitSetExpr(this)
-    }
-}
-
-data class SuperExpr(val keyword: Token, val method: Token) : Expression {
-    override fun <T> accept(visitor: ExprVisitor<T>): T {
-        return visitor.visitSuperExpr(this)
-    }
-}
-
-data class ThisExpr(val keyword: Token) : Expression {
-    override fun <T> accept(visitor: ExprVisitor<T>): T {
-        return visitor.visitThisExpr(this)
-    }
-}
-
-data class UnaryExpr(val operator: Token, val right: Expression) : Expression {
-    override fun <T> accept(visitor: ExprVisitor<T>): T {
-        return visitor.visitUnaryExpr(this)
-    }
-}
-
-data class VariableExpr(val name: Token) : Expression {
-    override fun <T> accept(visitor: ExprVisitor<T>): T {
-        return visitor.visitVariableExpr(this)
-    }
-}
+class ParseError : RuntimeException()

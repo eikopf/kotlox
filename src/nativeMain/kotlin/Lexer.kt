@@ -1,8 +1,3 @@
-import platform.posix.fdopen
-import platform.posix.fprintf
-
-val STDERR = fdopen(2, "w")
-
 class Lexer(private var source: String) {
 
     var hadError = false
@@ -11,7 +6,7 @@ class Lexer(private var source: String) {
     private var currentChar = 0
     private var line = 0
 
-    fun scanTokens(): List<Token> {
+    fun scanTokens(): List<Token>? {
 
         val tokens = ArrayList<Token>()
 
@@ -31,12 +26,13 @@ class Lexer(private var source: String) {
         }
 
         tokens.add(Token(TokenType.EOF, "", null, line))
+        if (hadError) return null
         return tokens
     }
 
 
     /**
-     * Returns a pair of corresponding to a token and optional literal
+     * Returns a pair corresponding to a token and optional literal
      */
     private fun scanToken(): Pair<TokenType, Any?>? {
         when (val c: Char = advance()) {
@@ -88,7 +84,7 @@ class Lexer(private var source: String) {
             }
         }
 
-        throw Error("unreachable")
+        throw RuntimeException("unparseable symbol")
     }
 
     /**
@@ -183,10 +179,6 @@ class Lexer(private var source: String) {
         report(line, "", message)
         hadError = true
     }
-
-    private fun report(line: Int, where: String, message: String) {
-        fprintf(STDERR, "%s\n", "[line $line] Error$where: $message")
-    }
 }
 
 enum class TokenType {
@@ -239,3 +231,5 @@ data class Token(val type: TokenType, val lexeme: String, val literal: Any?, val
 fun Char.isAlphaNumeric(): Boolean {
     return this.isDigit() or this.isLetter()
 }
+
+class LexError : RuntimeException()
