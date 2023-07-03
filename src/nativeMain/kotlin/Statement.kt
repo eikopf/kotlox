@@ -57,7 +57,7 @@ data class ReturnStmt(val keyword: Token, val value: Expression) : Statement {
     }
 }
 
-data class VarStmt(val name: Token, val initializer: Expression) : Statement {
+data class VarStmt(val name: Token, val initializer: Expression?) : Statement {
     override fun <T> accept(visitor: StmtVisitor<T>): T {
         return visitor.visitVarStmt(this)
     }

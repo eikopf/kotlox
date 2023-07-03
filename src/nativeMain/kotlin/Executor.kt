@@ -19,10 +19,9 @@ class Executor(private val interpreter: Interpreter) {
         val tokens = lexer.scanTokens() ?: throw LexError()
 
         val parser = Parser(tokens)
-        val expression = parser.parse() ?: throw ParseError()
+        val statements: List<Statement> = parser.parse() ?: throw ParseError()
 
-        interpreter.interpret(expression) // throws InterpreterError
-
+        interpreter.interpret(statements) // throws InterpreterError
     }
 }
 

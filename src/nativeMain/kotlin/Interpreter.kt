@@ -1,18 +1,63 @@
 import platform.posix.fprintf
 
-class Interpreter : ExprVisitor<Any?> {
+class Interpreter : ExprVisitor<Any?>, StmtVisitor<Unit> {  // can't use java's Void in Kotlin/Native
 
-    fun interpret(expr: Expression) {
+    private val environment = Environment()
+
+    fun interpret(statements: List<Statement>) {
         try {
-            val value = evaluate(expr)
-            println(stringify(value))
+            statements.forEach {
+                execute(it)
+            }
         } catch (err: RuntimeError) {
             runtimeError(err)
         }
     }
 
+    private fun execute(stmt: Statement) {
+        stmt.accept(this)
+    }
+
     private fun evaluate(expr: Expression): Any? {
         return expr.accept(this)
+    }
+
+    override fun visitBlockStmt(stmt: BlockStmt) {
+        TODO("Not yet implemented")
+    }
+
+    override fun visitClassStmt(stmt: ClassStmt) {
+        TODO("Not yet implemented")
+    }
+
+    override fun visitExpressionStmt(stmt: ExpressionStmt) {
+        evaluate(stmt.expression)
+    }
+
+    override fun visitFunctionStmt(stmt: FunctionStmt) {
+        TODO("Not yet implemented")
+    }
+
+    override fun visitIfStmt(stmt: IfStmt) {
+        TODO("Not yet implemented")
+    }
+
+    override fun visitPrintStmt(stmt: PrintStmt) {
+        val value: Any? = evaluate(stmt.expression)
+        println(stringify(value))
+    }
+
+    override fun visitReturnStmt(stmt: ReturnStmt) {
+        TODO("Not yet implemented")
+    }
+
+    override fun visitVarStmt(stmt: VarStmt) {
+        val value = if (stmt.initializer != null) evaluate(stmt.initializer) else null
+        environment.define(stmt.name.lexeme, value)
+    }
+
+    override fun visitWhileStmt(stmt: WhileStmt) {
+        TODO("Not yet implemented")
     }
 
     override fun visitAssignExpr(expr: AssignExpr): Any? {
@@ -96,7 +141,7 @@ class Interpreter : ExprVisitor<Any?> {
     }
 
     override fun visitVariableExpr(expr: VariableExpr): Any? {
-        TODO("Not yet implemented")
+        return environment.get(expr.name)
     }
 }
 
@@ -124,7 +169,7 @@ private fun stringify(any: Any?): String {
     return any.toString()
 }
 
-private class RuntimeError(val token: Token, message: String) : RuntimeException(message)
+class RuntimeError(val token: Token, message: String) : RuntimeException(message)
 class InterpreterError : RuntimeException()
 
 private fun runtimeError(err: RuntimeError) {

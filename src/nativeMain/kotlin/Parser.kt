@@ -8,10 +8,28 @@
 class Parser(private val tokens: List<Token>) {
     private var current: Int = 0
 
-    fun parse(): List<Statement> {
+    fun parse(): List<Statement>? {
         val statements = ArrayList<Statement>()
-        while (!atEnd()) statements.add(statement())
+        while (!atEnd()) statements.add(declaration() ?: return null)
         return statements
+    }
+
+    private fun declaration(): Statement? {
+        try {
+            if (match(TokenType.VAR)) return varDeclaration()
+            return statement()
+        } catch (err: ParseError) {
+            synchronize()
+            return null
+        }
+    }
+
+    private fun varDeclaration(): Statement {
+        val name = consume(TokenType.IDENTIFIER, "Expect variable name.")
+        val initializer = if (match(TokenType.EQUAL)) expression() else null
+
+        consume(TokenType.SEMICOLON, "Expect ';' after variable declaration")
+        return VarStmt(name, initializer)
     }
 
     private fun statement(): Statement {
@@ -104,6 +122,7 @@ class Parser(private val tokens: List<Token>) {
             consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.")
             return GroupingExpr(expr)
         }
+        if (match(TokenType.IDENTIFIER)) return VariableExpr(previous())
         if (match(TokenType.LEFT_PAREN)) {
             val expr = expression()
             consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.")
