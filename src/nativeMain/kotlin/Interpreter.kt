@@ -116,7 +116,22 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Unit> {  // can't use java's 
     }
 
     override fun visitCallExpr(expr: CallExpr): Any? {
-        TODO("Not yet implemented")
+        val callee = evaluate(expr.callee)
+
+        val arguments: MutableList<Any?> = ArrayList()
+        expr.arguments.forEach { arguments.add(evaluate(it)) }
+
+        val function = callee as? LoxCallable ?: throw RuntimeError(
+            expr.paren,
+            "Can only call functions and classes."
+        )
+
+        if (arguments.size != function.arity()) throw RuntimeError(
+            expr.paren,
+            "Expected ${function.arity()} arguments but got ${arguments.size}."
+        )
+
+        return function.call(this, arguments)
     }
 
     override fun visitGetExpr(expr: GetExpr): Any? {
