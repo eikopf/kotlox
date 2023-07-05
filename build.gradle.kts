@@ -31,6 +31,7 @@ kotlin {
         val nativeMain by getting {
             dependencies {
                 implementation("com.squareup.okio:okio:3.3.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
             }
         }
         val nativeTest by getting {

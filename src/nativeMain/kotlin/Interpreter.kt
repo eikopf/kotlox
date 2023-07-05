@@ -2,7 +2,7 @@ import platform.posix.fprintf
 
 class Interpreter : ExprVisitor<Any?>, StmtVisitor<Unit> {  // can't use java's Void in Kotlin/Native
 
-    private var environment = Environment()
+    private var environment = globals  // top-level environment includes default native functions and global values
 
     fun interpret(statements: List<Statement>) {
         try {

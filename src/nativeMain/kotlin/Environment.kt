@@ -1,5 +1,5 @@
-class Environment(private val enclosing: Environment? = null) {
-    private val values: MutableMap<String, Any?> = HashMap()     // stores top-level bindings and environments
+class Environment(private val enclosing: Environment? = null,
+                  private val values: MutableMap<String, Any?> = HashMap()) {
 
     fun define(name: String, value: Any?) {
         values[name] = value
@@ -22,3 +22,9 @@ class Environment(private val enclosing: Environment? = null) {
         throw RuntimeError(name, "Undefined variable '${name.lexeme}'.")
     }
 }
+
+val globals: Environment = Environment(null,
+    mutableMapOf(
+        "clock" to LoxClock(),
+    )
+)

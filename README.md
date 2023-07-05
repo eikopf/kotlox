@@ -13,6 +13,7 @@ curiosity regarding interpreters.
 > Who knew?
 
 ## Dependencies
-| Dependency                               | Purpose                                   |
-|------------------------------------------|-------------------------------------------|
- | [`okio`](https://square.github.io/okio/) | A Kotlin/Native library for POSIX file IO |
+| Dependency                                                      | Purpose                                                       |
+|-----------------------------------------------------------------|---------------------------------------------------------------|
+ | [`okio`](https://square.github.io/okio/)                        | A Kotlin/Native library for POSIX file IO                     |
+| [`kotlinx-datetime`](https://github.com/Kotlin/kotlinx-datetime) | A multiplatform Kotlin library for working with date and time |
