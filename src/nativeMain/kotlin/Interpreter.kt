@@ -2,7 +2,7 @@ import platform.posix.fprintf
 
 class Interpreter : ExprVisitor<Any?>, StmtVisitor<Unit> {  // can't use java's Void in Kotlin/Native
 
-    private val environment = Environment()
+    private var environment = Environment()
 
     fun interpret(statements: List<Statement>) {
         try {
@@ -18,12 +18,24 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Unit> {  // can't use java's 
         stmt.accept(this)
     }
 
+    private fun executeBlock(statements: List<Statement>, environment: Environment) {
+        val previous = this.environment // store outer (current) scope
+
+        try {
+            this.environment = environment // move to inner scope
+            statements.forEach { execute(it) }  // sequentially execute the block
+
+        } finally {
+            this.environment = previous // move back into outer scope
+        }
+    }
+
     private fun evaluate(expr: Expression): Any? {
         return expr.accept(this)
     }
 
     override fun visitBlockStmt(stmt: BlockStmt) {
-        TODO("Not yet implemented")
+        executeBlock(stmt.statements, Environment(environment))
     }
 
     override fun visitClassStmt(stmt: ClassStmt) {
@@ -61,7 +73,9 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Unit> {  // can't use java's 
     }
 
     override fun visitAssignExpr(expr: AssignExpr): Any? {
-        TODO("Not yet implemented")
+        val value = evaluate(expr.value)
+        environment.assign(expr.name, value)
+        return value
     }
 
     override fun visitBinaryExpr(expr: BinaryExpr): Any? {

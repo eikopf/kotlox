@@ -33,6 +33,10 @@ kotlin {
                 implementation("com.squareup.okio:okio:3.3.0")
             }
         }
-        val nativeTest by getting
+        val nativeTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
     }
 }

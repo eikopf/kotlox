@@ -1,8 +1,9 @@
 /**
  * Parses a list of tokens into an expression.
  *
- * The `expression` > `equality` > `comparison` > `term` > `factor` > `unary` > `primary` precedence order
- * found in Lox is enforced here by the structure of the functions which parse each kind of
+ * The specific expression precedence order
+ * found in Lox is enforced here by the structure
+ * of the functions which parse each kind of
  * basic expression.
  */
 class Parser(private val tokens: List<Token>) {
@@ -34,8 +35,17 @@ class Parser(private val tokens: List<Token>) {
 
     private fun statement(): Statement {
         if (match(TokenType.PRINT)) return printStatement()
+        if (match(TokenType.LEFT_BRACE)) return BlockStmt(block())
 
         return expressionStatement()
+    }
+
+    private fun block(): List<Statement> {
+        val statements: MutableList<Statement> = ArrayList()
+        while (!check(TokenType.RIGHT_BRACE) and !atEnd()) statements.add(declaration() ?: throw ParseError())
+
+        consume(TokenType.RIGHT_BRACE, "Expect '}' after block.")
+        return statements
     }
 
     private fun printStatement(): Statement {
@@ -51,7 +61,25 @@ class Parser(private val tokens: List<Token>) {
     }
 
     private fun expression(): Expression {
-        return equality()
+        return assignment()
+    }
+
+    private fun assignment(): Expression {
+        val expr = equality()
+
+        if (match(TokenType.EQUAL)) {
+            val equals = previous()
+            val value = assignment() // recursive invocation handles nested assignments, i.e. 'a.b.c = true'
+
+            if (expr is VariableExpr) { // implicit safe-cast to VariableExpr
+                val name = expr.name
+                return AssignExpr(name, value)
+            }
+
+            error(equals, "Invalid assignment target.")
+        }
+
+        return expr
     }
 
     private fun equality(): Expression {
@@ -134,7 +162,7 @@ class Parser(private val tokens: List<Token>) {
     private fun match(vararg types: TokenType): Boolean {
         for (type in types) {
             if (check(type)) {
-                advance();
+                advance()
                 return true
             }
         }
