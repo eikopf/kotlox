@@ -70,7 +70,9 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Unit> {  // can't use java's 
     }
 
     override fun visitWhileStmt(stmt: WhileStmt) {
-        TODO("Not yet implemented")
+        while (truthy(evaluate(stmt.condition))) {
+            execute(stmt.body)
+        }
     }
 
     override fun visitAssignExpr(expr: AssignExpr): Any? {

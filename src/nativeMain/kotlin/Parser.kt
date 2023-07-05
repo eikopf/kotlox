@@ -34,8 +34,10 @@ class Parser(private val tokens: List<Token>) {
     }
 
     private fun statement(): Statement {
+        if (match(TokenType.FOR)) return forStatement()
         if (match(TokenType.IF)) return ifStatement()
         if (match(TokenType.PRINT)) return printStatement()
+        if (match(TokenType.WHILE)) return whileStatement()
         if (match(TokenType.LEFT_BRACE)) return BlockStmt(block())
 
         return expressionStatement()
@@ -47,6 +49,34 @@ class Parser(private val tokens: List<Token>) {
 
         consume(TokenType.RIGHT_BRACE, "Expect '}' after block.")
         return statements
+    }
+
+    private fun forStatement(): Statement {
+        consume(TokenType.LEFT_PAREN, "Expect '(' after 'for'.")
+
+        val initializer: Statement? = if (match(TokenType.SEMICOLON)) {
+            null
+        } else if (match(TokenType.VAR)) {
+            varDeclaration()
+        } else {
+            expressionStatement()
+        }
+
+        var condition: Expression? = if (!check(TokenType.SEMICOLON)) expression() else null
+        val increment: Expression? = if (!check(TokenType.RIGHT_PAREN)) expression() else null
+
+        consume(TokenType.RIGHT_PAREN, "Expect ')' after for clauses.")
+        var body: Statement = statement()
+
+        if (increment != null) {
+            body = BlockStmt(listOf(body, ExpressionStmt(increment)))
+        }
+
+        if (condition == null) condition = LiteralExpr(true)
+        body = WhileStmt(condition, body)
+
+        if (initializer != null) body = BlockStmt(listOf(initializer, body))
+        return body
     }
 
     private fun ifStatement(): Statement {
@@ -64,6 +94,15 @@ class Parser(private val tokens: List<Token>) {
         val value = expression()
         consume(TokenType.SEMICOLON, "Expect ';' after value.")
         return PrintStmt(value)
+    }
+
+    private fun whileStatement(): Statement {
+        consume(TokenType.LEFT_PAREN, "Expect '(' after 'while'.")
+        val condition = expression()
+        consume(TokenType.RIGHT_PAREN, "Expect ')' after condition.")
+
+        val body = statement()
+        return WhileStmt(condition, body)
     }
 
     private fun expressionStatement(): Statement {
