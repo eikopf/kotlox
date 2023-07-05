@@ -34,6 +34,7 @@ class Parser(private val tokens: List<Token>) {
     }
 
     private fun statement(): Statement {
+        if (match(TokenType.IF)) return ifStatement()
         if (match(TokenType.PRINT)) return printStatement()
         if (match(TokenType.LEFT_BRACE)) return BlockStmt(block())
 
@@ -46,6 +47,17 @@ class Parser(private val tokens: List<Token>) {
 
         consume(TokenType.RIGHT_BRACE, "Expect '}' after block.")
         return statements
+    }
+
+    private fun ifStatement(): Statement {
+        consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.")
+        val condition = expression()
+        consume(TokenType.RIGHT_PAREN, "Expect ')' after if condition.")
+
+        val thenBranch = statement()
+        val elseBranch = if (match(TokenType.ELSE)) statement() else null
+
+        return IfStmt(condition, thenBranch, elseBranch)
     }
 
     private fun printStatement(): Statement {
@@ -65,7 +77,7 @@ class Parser(private val tokens: List<Token>) {
     }
 
     private fun assignment(): Expression {
-        val expr = equality()
+        val expr = or()
 
         if (match(TokenType.EQUAL)) {
             val equals = previous()
@@ -77,6 +89,30 @@ class Parser(private val tokens: List<Token>) {
             }
 
             error(equals, "Invalid assignment target.")
+        }
+
+        return expr
+    }
+
+    private fun or(): Expression {
+        var expr = and()
+
+        while (match(TokenType.OR)) {
+            val operator = previous()
+            val right = and()
+            expr = LogicalExpr(expr, right, operator)
+        }
+
+        return expr
+    }
+
+    private fun and(): Expression {
+        var expr = equality()
+
+        while (match(TokenType.AND)) {
+            val operator = previous()
+            val right = equality()
+            expr = LogicalExpr(expr, right, operator)
         }
 
         return expr

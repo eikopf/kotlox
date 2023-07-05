@@ -51,7 +51,8 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Unit> {  // can't use java's 
     }
 
     override fun visitIfStmt(stmt: IfStmt) {
-        TODO("Not yet implemented")
+        if (truthy(evaluate(stmt.condition))) execute(stmt.thenBranch)
+        else execute(stmt.elseBranch ?: return) // return if elseBranch is null
     }
 
     override fun visitPrintStmt(stmt: PrintStmt) {
@@ -129,7 +130,12 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Unit> {  // can't use java's 
     }
 
     override fun visitLogicalExpr(expr: LogicalExpr): Any? {
-        TODO("Not yet implemented")
+        val left = evaluate(expr.left)
+
+        if ((expr.operator.type == TokenType.OR) and (truthy(left))) return left
+        else if (!truthy(left)) return left
+
+        return evaluate(expr.right)
     }
 
     override fun visitSetExpr(expr: SetExpr): Any? {

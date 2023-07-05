@@ -39,7 +39,7 @@ data class FunctionStmt(val name: Token, val params: List<Token>, val body: List
     }
 }
 
-data class IfStmt(val condition: Expression, val thenBranch: Statement, val elseBranch: Statement) : Statement {
+data class IfStmt(val condition: Expression, val thenBranch: Statement, val elseBranch: Statement?) : Statement {
     override fun <T> accept(visitor: StmtVisitor<T>): T {
         return visitor.visitIfStmt(this)
     }
