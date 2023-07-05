@@ -212,7 +212,21 @@ class Parser(private val tokens: List<Token>) {
             return UnaryExpr(operator, right)
         }
 
-        return primary()
+        return call()
+    }
+
+    private fun call(): Expression {
+        var expr = primary()
+
+        while (true) {
+            if (match(TokenType.LEFT_PAREN)) {
+                expr = finishCall(expr)
+            } else {
+                break
+            }
+        }
+
+        return expr
     }
 
     private fun primary(): Expression {
@@ -243,6 +257,20 @@ class Parser(private val tokens: List<Token>) {
         }
 
         return false
+    }
+
+    private fun finishCall(callee: Expression): Expression {
+        val arguments: MutableList<Expression> = ArrayList()
+
+        if (!check(TokenType.RIGHT_PAREN)) {
+            do {
+                if (arguments.size >= 255) error(peek(), "Can't have more than 255 arguments.")
+                arguments.add(expression())
+            } while (match(TokenType.COMMA))
+        }
+
+        val paren: Token = consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.")
+        return CallExpr(callee, paren, arguments)
     }
 
     private fun synchronize() {
