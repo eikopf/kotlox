@@ -18,6 +18,11 @@ class Environment(private val enclosing: Environment? = null,
             return
         }
 
+        if (enclosing != null) {
+            enclosing.assign(name, value)
+            return
+        }
+
         // no implicit variable declaration; if the variable doesn't exist then it's an error
         throw RuntimeError(name, "Undefined variable '${name.lexeme}'.")
     }

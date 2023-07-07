@@ -14,11 +14,11 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Unit> {  // can't use java's 
         }
     }
 
-    private fun execute(stmt: Statement) {
+    fun execute(stmt: Statement) {
         stmt.accept(this)
     }
 
-    private fun executeBlock(statements: List<Statement>, environment: Environment) {
+    fun executeBlock(statements: List<Statement>, environment: Environment) {
         val previous = this.environment // store outer (current) scope
 
         try {

@@ -48,6 +48,32 @@ fun runFile(path: Path) {
     }
 }
 
+fun tokenizeFile(path: Path) {
+
+    val contents = FileSystem.SYSTEM.read(path) {
+        readUtf8()
+    }
+
+    val lexer = Lexer(contents)
+    val tokens = lexer.scanTokens() ?: throw LexError()
+    tokens.forEach { println(it) }
+}
+
+fun printFileStatements(path: Path) {
+
+    val contents = FileSystem.SYSTEM.read(path) {
+        readUtf8()
+    }
+
+    val lexer = Lexer(contents)
+    val tokens = lexer.scanTokens() ?: throw LexError()
+
+    val parser = Parser(tokens)
+    val statements: List<Statement> = parser.parse() ?: throw ParseError()
+
+    statements.forEach { println(it) }
+}
+
 /**
  * Runs in REPL mode
  */

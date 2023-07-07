@@ -17,12 +17,30 @@ class Parser(private val tokens: List<Token>) {
 
     private fun declaration(): Statement? {
         try {
+            if (match(TokenType.FUN)) return function("function")
             if (match(TokenType.VAR)) return varDeclaration()
             return statement()
         } catch (err: ParseError) {
             synchronize()
             return null
         }
+    }
+
+    private fun function(kind: String): FunctionStmt {
+        val name = consume(TokenType.IDENTIFIER, "Expect $kind name.")
+        consume(TokenType.LEFT_PAREN, "Expect '(' after $kind name.")
+
+        val parameters: MutableList<Token> = ArrayList()
+        if (!check(TokenType.RIGHT_PAREN)) do {
+            if (parameters.size >= 255) error(peek(), "Can't have more than 255 parameters.")
+            parameters.add(consume(TokenType.IDENTIFIER, "Expect parameter name."))
+        } while (match(TokenType.COMMA))
+
+        consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.")
+        consume(TokenType.LEFT_BRACE, "Expect '{' before $kind body.")
+
+        val body = block()
+        return FunctionStmt(name, parameters, body)
     }
 
     private fun varDeclaration(): Statement {
@@ -63,9 +81,10 @@ class Parser(private val tokens: List<Token>) {
         }
 
         var condition: Expression? = if (!check(TokenType.SEMICOLON)) expression() else null
+        consume(TokenType.SEMICOLON, "Expect ';' after loop condition.")
         val increment: Expression? = if (!check(TokenType.RIGHT_PAREN)) expression() else null
-
         consume(TokenType.RIGHT_PAREN, "Expect ')' after for clauses.")
+
         var body: Statement = statement()
 
         if (increment != null) {
