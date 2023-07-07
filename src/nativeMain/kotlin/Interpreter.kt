@@ -47,7 +47,7 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Unit> {  // can't use java's 
     }
 
     override fun visitFunctionStmt(stmt: FunctionStmt) {
-        val function = LoxFunction(stmt)
+        val function = LoxFunction(stmt, environment) // create a function with the current environment as a closure
         environment.define(stmt.name.lexeme, function)
     }
 
@@ -62,7 +62,9 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Unit> {  // can't use java's 
     }
 
     override fun visitReturnStmt(stmt: ReturnStmt) {
-        TODO("Not yet implemented")
+        val value = stmt.value?.let { evaluate(it) }
+
+        throw Return(value) // basically: escape the call stack and jump outside the function/method
     }
 
     override fun visitVarStmt(stmt: VarStmt) {

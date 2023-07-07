@@ -51,7 +51,7 @@ data class PrintStmt(val expression: Expression) : Statement {
     }
 }
 
-data class ReturnStmt(val keyword: Token, val value: Expression) : Statement {
+data class ReturnStmt(val keyword: Token, val value: Expression?) : Statement {
     override fun <T> accept(visitor: StmtVisitor<T>): T {
         return visitor.visitReturnStmt(this)
     }
