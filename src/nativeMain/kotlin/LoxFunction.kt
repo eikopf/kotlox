@@ -1,10 +1,6 @@
-interface LoxCallable {
-    fun arity(): Int
-    fun call(interpreter: Interpreter, arguments: List<Any?>): Any?
-}
-
 class LoxFunction(private val declaration: FunctionStmt) : LoxCallable {
     override fun arity(): Int = declaration.params.size
+    override fun toString(): String = "<fn ${declaration.name.lexeme}>"
 
     override fun call(interpreter: Interpreter, arguments: List<Any?>) {
         val environment = Environment(globals)

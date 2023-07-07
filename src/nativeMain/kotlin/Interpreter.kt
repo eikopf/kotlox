@@ -47,7 +47,8 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Unit> {  // can't use java's 
     }
 
     override fun visitFunctionStmt(stmt: FunctionStmt) {
-        TODO("Not yet implemented")
+        val function = LoxFunction(stmt)
+        environment.define(stmt.name.lexeme, function)
     }
 
     override fun visitIfStmt(stmt: IfStmt) {
